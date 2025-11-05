@@ -1,47 +1,32 @@
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
+<script>
+import SongList from './components/SongList.vue';
+
+export default{
+  name:'App',
+  components:{
+    SongList
+  }
+}
 </script>
 
+
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+  <div class="app-container p-3 bg-black m-auto">
+    <SongList/>
+  </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
+<style>
+.app-container{
+  width:350px;
+  height:700px;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+#app{
+  font-family:Avenir,Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:graycale;
+  margin-top:20px;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
 </style>
