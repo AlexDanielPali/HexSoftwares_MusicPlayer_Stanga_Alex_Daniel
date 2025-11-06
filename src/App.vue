@@ -11,22 +11,13 @@ export default{
 
 
 <template>
-  <div class="app-container p-3 bg-black m-auto">
-    <SongList/>
+  <!-- Use the project's player layout for a responsive, techy look -->
+  <div class="player-app">
+    <SongList />
   </div>
 </template>
 
 <style>
-.app-container{
-  width:350px;
-  height:700px;
-}
-
-#app{
-  font-family:Avenir,Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:graycale;
-  margin-top:20px;
-}
-
+/* keep App.vue light — main layout lives in src/components/style.css */
+#app{font-family:Avenir,Arial, Helvetica, sans-serif}
 </style>

@@ -1,75 +1,158 @@
 <template>
-    <audio v-bind:src="song.songSrc" preload="auto" autoplay ref="audioPlayer" />
-    <div class="text-white">
-        <div class="flex flex-row justify-between">
-            <button v-on:click="goback">Back</button>
-            <div class="text-yellow-300 font-bold text-1xl">VueJS Music App</div>
-        </div>
-        <div>
-            <img class="rounded mt-8 mb-4" v-bind:src="song.src" />
-            <div class="text-center">
-                <p class="text-yellow-300 font-bold">{{ song.name }}</p>
-                <p class="text-gray-200">{{ song.artistName }} - {{ song.albumName }}</p>
-                <p class="text-gray-400">{{ song.year }}</p>
+    <div>
+        <!-- hidden audio element -->
+        <audio ref="audioPlayer" :src="song.songSrc" preload="metadata"></audio>
+
+        <div class="now-playing">
+            <div class="track-info">
+                <div class="title">{{ song.name }}</div>
+                <div class="artist">{{ song.artistName }} — {{ song.albumName }}</div>
+            </div>
+            <div class="track-art">
+                <img :src="song.src" alt="cover" style="height:64px;width:64px;border-radius:8px;object-fit:cover" />
             </div>
         </div>
-        <div class="grid grid-cols-3 mt-10">
-            <div class="flex items-center justify-center">
-                <button v-on:click="previous">Previous</button>
+
+        <div class="visualizer playing mt-4" aria-hidden="true">
+            <span class="wave"></span>
+            <span class="wave"></span>
+            <span class="wave"></span>
+            <span class="wave"></span>
+            <span class="wave"></span>
+        </div>
+
+        <div class="progress-wrap mt-4">
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:var(--muted);margin-bottom:6px">
+                <div>{{ formattedCurrentTime }}</div>
+                <div>{{ formattedDuration }}</div>
             </div>
-            <div class="flex items-center justify-center">
-                <button
-                    class="rounded-full bg-yellow-300 h-24 w-24 text-black font-bold"
-                    v-on:click="togglePlay"
-                >
-                    {{ isPlaying ? 'Pause' : 'Play' }}
-                </button>
+            <div class="progress-bar" @click="seek($event)">
+                <div class="progress" :style="{ width: progressPercent + '%' }"></div>
             </div>
-            <div class="flex items-center justify-center">
-                <button v-on:click="next">Next</button>
-            </div>
+        </div>
+
+        <div class="controls mt-6">
+            <button class="btn" @click="toggleRepeat" :title="repeat ? 'Repeat: on' : 'Repeat: off'">
+                <span :style="{ color: repeat ? 'var(--accent)' : 'inherit' }">⤾</span>
+            </button>
+
+            <button class="btn" @click="previous">⟸</button>
+
+            <button class="btn primary" @click="togglePlay">
+                {{ isPlaying ? 'Pause' : 'Play' }}
+            </button>
+
+            <button class="btn" @click="next">⟹</button>
         </div>
     </div>
 </template>
 
 <script>
 export default {
-    data () {
-        return {
-            isPlaying: true
-        }
-    },
     name: 'SongPlayer',
     props: {
         song: {
-            id: Number,
-            name: String,
-            artistName: String,
-            albumName: String,
-            year: Number,
-            src: String,
-            songSrc: String
-        },
+            type: Object,
+            required: true
+        }
     },
     emits: ['goback', 'next', 'previous'],
-    methods: {
-        goback () {
-            this.$emit('goback');
+    data () {
+        return {
+            isPlaying: false,
+            duration: 0,
+            currentTime: 0,
+            repeat: false
+        }
+    },
+    computed: {
+        progressPercent () {
+            if (!this.duration) return 0;
+            return (this.currentTime / this.duration) * 100;
         },
-        togglePlay () {
-            if (this.isPlaying) {
-                this.$refs.audioPlayer.pause();
-            } else {
-                this.$refs.audioPlayer.play();
+        formattedCurrentTime () {
+            return this.formatTime(this.currentTime);
+        },
+        formattedDuration () {
+            return this.formatTime(this.duration);
+        }
+    },
+    watch: {
+        song: {
+            immediate: true,
+            handler () {
+                // when the song prop changes, load it and play
+                const audio = this.$refs.audioPlayer;
+                if (!audio) return;
+                audio.pause();
+                audio.currentTime = 0;
+                this.currentTime = 0;
+                this.duration = 0;
+                // load new src
+                // small timeout to ensure src prop applied
+                this.$nextTick(() => {
+                    try {
+                        audio.load();
+                        // attempt to play only if songSrc present
+                        if (this.song.songSrc) {
+                            audio.play().then(() => { this.isPlaying = true }).catch(() => { this.isPlaying = false });
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                });
             }
+        }
+    },
+    mounted () {
+        const audio = this.$refs.audioPlayer;
+        if (!audio) return;
 
+        audio.addEventListener('loadedmetadata', () => {
+            this.duration = audio.duration || 0;
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            this.currentTime = audio.currentTime;
+        });
+
+        audio.addEventListener('ended', () => {
+            if (this.repeat) {
+                audio.currentTime = 0;
+                audio.play();
+            } else {
+                this.$emit('next');
+            }
+        });
+    },
+    methods: {
+        goback () { this.$emit('goback'); },
+        togglePlay () {
+            const audio = this.$refs.audioPlayer;
+            if (!audio) return;
+            if (this.isPlaying) {
+                audio.pause();
+            } else {
+                audio.play();
+            }
             this.isPlaying = !this.isPlaying;
         },
-        next () {
-            this.$emit('next');
+        next () { this.$emit('next'); },
+        previous () { this.$emit('previous'); },
+        toggleRepeat () { this.repeat = !this.repeat; },
+        formatTime (seconds = 0) {
+            if (!seconds || isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
         },
-        previous () {
-            this.$emit('previous');
+        seek (event) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const pct = x / rect.width;
+            const audio = this.$refs.audioPlayer;
+            if (!audio || !this.duration) return;
+            audio.currentTime = pct * this.duration;
         }
     }
 }
