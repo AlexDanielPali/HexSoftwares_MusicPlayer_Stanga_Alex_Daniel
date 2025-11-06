@@ -13,7 +13,7 @@ export default{
 <template>
   <!-- Use the project's player layout for a responsive, techy look -->
   <div class="player-app">
-    <SongList />
+    <SongList/>
   </div>
 </template>
 
